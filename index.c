@@ -40,6 +40,12 @@ MYFILE *myfopen(char *filename, char *mode) {
     return fp;
 }
 
+void myfclose(MYFILE *fp) {
+  myfflush(fp);
+  close(fp->fd);
+  fp->fd = 0;
+}
+
 int myfillbuf(MYFILE *fp) {
   int bufsize;
   int readMask = (FlagsStruct._READ | FlagsStruct._WRITE | FlagsStruct._ERR);
@@ -61,4 +67,7 @@ int myfillbuf(MYFILE *fp) {
   }
   return (unsigned char) *fp->ptr++;
 }
-  
+
+int myfflush(MYFILE *fp) {
+  return 0;
+}
