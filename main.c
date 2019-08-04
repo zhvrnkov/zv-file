@@ -31,6 +31,6 @@ MYFILE *_iob;
 int main(int argc, const char * argv[]) {
     _iob = getiob();
     
-    printf("Hello, World!\n");
+    printf("Hello, GitHub!\n");
     return 0;
 }
