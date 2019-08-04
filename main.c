@@ -8,29 +8,47 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "index.h"
+#include <string.h>
 
-const extern struct _flag FlagsStruct;
+typedef struct _writeStatus {
+    int isSuccess;
+} WriteStatus;
 
-MYFILE *getiob() {
-    MYFILE *output = (MYFILE *) malloc(sizeof(MYFILE) * OPEN_MAX);
-    
-    MYFILE _stdout = { 0, (char *) 0, (char *) 0, FlagsStruct._READ, 0 };
-    MYFILE _stdin = { 0, (char *) 0, (char *) 0, FlagsStruct._WRITE, 1};
-    MYFILE _stderr = { 0, (char *) 0, (char *) 0, FlagsStruct._WRITE | FlagsStruct._UNBUF, 2};
-    
-    output[0] = _stdout;
-    output[1] = _stdin;
-    output[2] = _stderr;
-    
-    return output;
-};
+typedef struct _readStatus {
+    int isSuccess;
+    char *content;
+} ReadStatus;
 
-MYFILE *_iob;
+WriteStatus writeToFile(const char *path, const char *content);
+ReadStatus readAllFromFile(const char *path);
+ReadStatus readFromFile(const char *path, int amount);
+
+char mockContent[] = "Lorem Ipsum Datur Uel";
 
 int main(int argc, const char * argv[]) {
-    _iob = getiob();
-    
-    printf("Hello, GitHub!\n");
+    WriteStatus writeResult = writeToFile("./text", mockContent);
+    if (!writeResult.isSuccess) printf("error: bad write\n");
+    ReadStatus readRestult = readAllFromFile("./text");
+    if (readRestult.isSuccess) {
+        if (!strcmp(readRestult.content, mockContent)) printf("error: bad content\n");
+    } else {
+        printf("error: bad read\n");
+    }
+
     return 0;
+}
+
+WriteStatus writeToFile(const char *path, const char *content) {
+    WriteStatus output = { 0 };
+    return output;
+}
+
+ReadStatus readAllFromFile(const char *path) {
+    ReadStatus output = { 0, NULL };
+    return output;
+}
+
+ReadStatus readFromFile(const char *path, int amount) {
+    ReadStatus output = { 0, NULL };
+    return output;
 }
