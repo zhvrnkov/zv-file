@@ -12,6 +12,7 @@
 #include "unistd.h"
 #include "flagsstruct.h"
 #include <sys/fcntl.h>
+#include <stdlib.h>
 
 #define EOF (-1)
 #define BUFSIZE 1024
@@ -51,7 +52,7 @@ extern MYFILE *_iob;
 int myfillbuf(MYFILE *);
 int myflushbuf(int, MYFILE *);
 MYFILE *myfopen(char *, char *);
-void *myfclose(MYFILE *);
+void myfclose(MYFILE *);
 int myfseek(MYFILE *, long, int);
 int myfflush(MYFILE *);
 int myflose(MYFILE *);
