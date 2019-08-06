@@ -14,6 +14,10 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#define slice(array, range) (typeof(array[0]) *)arraySlice(array, sizeof(array[0]), range)
+
+typedef char Byte;
+
 typedef struct _writeStatus {
     int isSuccess;
 } WriteStatus;
@@ -26,24 +30,37 @@ typedef struct _readStatus {
 typedef struct _cleanStatus {
     int isSuccess;
 } CleanStatus;
+
+typedef struct _intRange {
+    int lowerBound;
+    int upperBound;
+} IntRange;
+
 WriteStatus writeToFile(const char *path, const char *content);
 ReadStatus readAllFromFile(const char *path);
 ReadStatus readFromFile(const char *path, int amount);
 CleanStatus cleanFile(const char *path);
+void *arraySlice(const void *array, size_t sizeOfElement, IntRange range);
 
-char mockContent[] = "Lorem Ipsum Datur Uel";
 char mockContent[] = "Lorem Ipsum Uel Datur\n";
 
 int main(int argc, const char * argv[]) {
-    WriteStatus writeResult = writeToFile("./text", mockContent);
-    if (!writeResult.isSuccess) printf("error: bad write\n");
-    ReadStatus readRestult = readAllFromFile("./text");
-    if (readRestult.isSuccess) {
-        if (!strcmp(readRestult.content, mockContent)) printf("error: bad content\n");
-    } else {
-        printf("error: bad read\n");
-    }
+//    WriteStatus writeResult = writeToFile("./text", mockContent);
+//    if (!writeResult.isSuccess) printf("error: bad write\n");
+//    ReadStatus readRestult = readAllFromFile("./text");
+//    if (readRestult.isSuccess) {
+//        if (strcmp(readRestult.content, mockContent) != 0) printf("error: bad content\n");
+//    } else {
+//        printf("error: bad read\n");
+//    }
+    IntRange range = { 0, 11 };
+    int array[] = { 1, 2, 3, 4, 5 };
+    typeof(mockContent[0]) *slice = slice(mockContent, range);
 
+    for (int i = 0; slice[i] != 0; i++)
+        printf("%d ", slice[i]);
+    
+    printf("\n");
     return 0;
 }
 
@@ -91,4 +108,15 @@ CleanStatus cleanFile(const char *path) {
     if (truncate(path, 0) == 0)
         output.isSuccess = 1;
     return output;
+}
+
+void *arraySlice(const void *array, size_t sizeOfElement, IntRange range) {
+    Byte *slice = (Byte *)malloc((range.upperBound - range.lowerBound) + 1 * sizeOfElement);
+    int sliceIndex = 0;
+    for (int i = range.lowerBound; i < range.upperBound; i++)
+        for (long k = i * sizeOfElement; k < (i + 1) * sizeOfElement; k++, sliceIndex++)
+            slice[sliceIndex] = ((Byte *)array)[k];
+    for (int i = 0; i < sizeOfElement; i++, sliceIndex++)
+        slice[sliceIndex] = 0;
+    return slice;
 }
