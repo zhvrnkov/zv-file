@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 
 #define slice(array, range) (typeof(array[0]) *)arraySlice(array, sizeof(array[0]), range)
+#define file "./text"
 
 typedef char Byte;
 
@@ -37,36 +38,87 @@ typedef struct _intRange {
 } IntRange;
 
 WriteStatus writeToFile(const char *path, const char *content);
+WriteStatus overwriteFile(const char *path, const char *content);
 ReadStatus readAllFromFile(const char *path);
-ReadStatus readFromFile(const char *path, int amount);
+ReadStatus readFromFile(const char *path, IntRange range);
 CleanStatus cleanFile(const char *path);
 void *arraySlice(const void *array, size_t sizeOfElement, IntRange range);
 
-char mockContent[] = "Lorem Ipsum Uel Datur\n";
+char mockContent[] = "Lorem Ipsum Uel\n";
+
+void checkClean(void);
+void checkWriteAndRead(void);
+void checkReadInRange(void);
 
 int main(int argc, const char * argv[]) {
-//    WriteStatus writeResult = writeToFile("./text", mockContent);
-//    if (!writeResult.isSuccess) printf("error: bad write\n");
-//    ReadStatus readRestult = readAllFromFile("./text");
-//    if (readRestult.isSuccess) {
-//        if (strcmp(readRestult.content, mockContent) != 0) printf("error: bad content\n");
-//    } else {
-//        printf("error: bad read\n");
-//    }
-    IntRange range = { 0, 11 };
-    int array[] = { 1, 2, 3, 4, 5 };
-    typeof(mockContent[0]) *slice = slice(mockContent, range);
-
-    for (int i = 0; slice[i] != 0; i++)
-        printf("%d ", slice[i]);
+    checkClean();
+    checkWriteAndRead();
+    checkReadInRange();
     
-    printf("\n");
     return 0;
+}
+
+void checkClean() {
+    int isSuccess = 1;
+    writeToFile(file, "Just foo");
+    CleanStatus cleanResult = cleanFile(file);
+    if (!cleanResult.isSuccess) {
+        printf("error: bad clean");
+        isSuccess = 0;
+    }
+    ReadStatus readAfterClean = readAllFromFile(file);
+    if (readAfterClean.isSuccess) {
+        if (strcmp("", readAfterClean.content) != 0) {
+            printf("error: bad clean check");
+            isSuccess = 0;
+        }
+    } else {
+        printf("error: bad read after clean\n");
+        isSuccess = 0;
+    }
+    if (isSuccess) printf("success: checkClean\n");
+}
+
+void checkWriteAndRead() {
+    int isSuccess = 1;
+    cleanFile(file);
+    WriteStatus writeResult = writeToFile(file, mockContent);
+    if (!writeResult.isSuccess) {
+        printf("error: bad write\n");
+        isSuccess = 0;
+    }
+    ReadStatus wholeRead = readAllFromFile(file);
+    if (wholeRead.isSuccess) {
+        if (strcmp(wholeRead.content, mockContent) != 0) {
+            printf("error: bad content\n");
+            isSuccess = 0;
+        }
+    } else {
+        printf("error: bad read\n");
+        isSuccess = 0;
+    }
+    if (isSuccess) printf("success: checkWriteAndRead\n");
+}
+
+void checkReadInRange(void) {
+    int isSuccess = 1;
+    overwriteFile(file, mockContent);
+    IntRange range = { 0, 5 };
+    char *mockContentSlice = slice(mockContent, range);
+    ReadStatus partialRead = readFromFile(file, range);
+    if (partialRead.isSuccess) {
+        if (strcmp(mockContentSlice, partialRead.content) != 0) {
+            printf("error: bad read from file");
+            isSuccess = 0;
+        }
+    } else {
+        isSuccess = 0;
+    }
+    if (isSuccess) printf("success: checkReadInRange\n");
 }
 
 WriteStatus writeToFile(const char *path, const char *content) {
     WriteStatus output = { 0 };
-    cleanFile(path);
     int fd = open(path, O_WRONLY);
     size_t numberOfWritenCharacters = write(fd, content, strlen(content));
     close(fd);
@@ -75,28 +127,37 @@ WriteStatus writeToFile(const char *path, const char *content) {
     return output;
 }
 
+WriteStatus overwriteFile(const char *path, const char *content) {
+    cleanFile(path);
+    return writeToFile(path, content);
+}
+
 ReadStatus readAllFromFile(const char *path) {
     ReadStatus output = { 0, NULL };
     int fd = open(path, O_RDONLY);
     off_t size = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
-    char *buffer = (char *)malloc(size);
-    size_t numberOfReadCharacters = read(fd, buffer, size);
+    char *buffer = (char *)malloc(size + 1);
+    size_t numberOfReadCharacters = read(fd, buffer, size + 1);
     close(fd);
-    if (numberOfReadCharacters > 0) {
+    if (numberOfReadCharacters != -1) {
+        buffer[size] = '\0';
         output.isSuccess = 1;
         output.content = buffer;
     }
     return output;
 }
 
-ReadStatus readFromFile(const char *path, int amount) {
+ReadStatus readFromFile(const char *path, IntRange range) {
     ReadStatus output = { 0, NULL };
     int fd = open(path, O_RDONLY);
-    char *buffer = (char *)malloc(amount);
-    size_t numberOfReadCharacters = read(fd, buffer, amount);
+    int readAmount = range.upperBound - range.lowerBound;
+    char *buffer = (char *)malloc(readAmount + 1);
+    lseek(fd, range.lowerBound, SEEK_SET);
+    size_t numberOfReadCharacters = read(fd, buffer, readAmount);
     close(fd);
-    if (numberOfReadCharacters > 0) {
+    if (numberOfReadCharacters != -1) {
+        buffer[readAmount] = '\0';
         output.isSuccess = 1;
         output.content = buffer;
     }
